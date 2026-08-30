@@ -21,7 +21,7 @@ Simply download the script, name it `xdg-mime`, and place it somewhere in your `
 
 ```bash
 mkdir -p ~/.local/bin
-curl -o ~/.local/bin/xdg-mime https://raw.githubusercontent.com/elseawhy/xdg-mimic/refs/heads/master/xdg-mime
+curl -o ~/.local/bin/xdg-mime https://raw.githubusercontent.com/elseawhy/xdg-mimic/refs/heads/main/xdg-mime
 chmod +x ~/.local/bin/xdg-mime
 ```
 
