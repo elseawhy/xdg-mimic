@@ -2,7 +2,7 @@
 
 > **⚠️ Status: Experimental**
 
-A smart, lightweight shadow for `xdg-mime` that brings dynamic "Open With..." menus to standalone window managers (Hyprland, Sway, i3, etc.).
+A smart, lightweight shadow for `xdg-mime` that brings dynamic "Open With..." menus to standalone window managers (Hyprland, Sway, i3, etc.). Supports fuzzel, rofi, wofi, bemenu & dmenu.
 
 ## 📖 The Philosophy
 
@@ -26,10 +26,6 @@ chmod +x ~/.local/bin/xdg-mime
 ```
 
 Ensure `~/.local/bin` is in your `$PATH`. The next time you use `xdg-open` on an unknown file, your launcher will pop up!
-
-## 🗺️ Roadmap
-
-Currently, the script is hardcoded to use `fuzzel`. The immediate next step is abstracting this to support `rofi`, `wofi`, `bemenu`, and other dmenu-compatible application launchers out of the box.
 
 ## 🤝 Contributing
 Since this is experimental, feel free to open issues or PRs if you find edge cases with specific file types or desktop environments!

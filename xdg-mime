@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Set to "fuzzel", "rofi", "wofi", "bemenu", or "dmenu" to force a specific launcher. 
+# Leave empty to auto-detect!
+LAUNCHER_OVERRIDE=""
+
 if [[ "$1" == "query" && "$2" == "default" && -n "$3" ]]; then
     DEFAULT=$(/usr/bin/xdg-mime "$@")
     [[ -n "$DEFAULT" && -n $(find /usr/share/applications ~/.local/share/applications -type f -name "$DEFAULT" 2>/dev/null | head -n 1) ]] && {
@@ -7,10 +11,25 @@ if [[ "$1" == "query" && "$2" == "default" && -n "$3" ]]; then
         exit 0
     }
 
+    if [[ "$LAUNCHER_OVERRIDE" == "fuzzel" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v fuzzel)" ) ]]; then
+        MENU_CMD=(fuzzel --dmenu --prompt="App for $3: ")
+    elif [[ "$LAUNCHER_OVERRIDE" == "rofi" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v rofi)" ) ]]; then
+        MENU_CMD=(rofi -dmenu -p "App for $3: ")
+    elif [[ "$LAUNCHER_OVERRIDE" == "wofi" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v wofi)" ) ]]; then
+        MENU_CMD=(wofi --dmenu --prompt="App for $3: ")
+    elif [[ "$LAUNCHER_OVERRIDE" == "bemenu" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v bemenu)" ) ]]; then
+        MENU_CMD=(bemenu -p "App for $3: ")
+    elif [[ "$LAUNCHER_OVERRIDE" == "dmenu" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v dmenu)" ) ]]; then
+        MENU_CMD=(dmenu -p "App for $3: ")
+    else
+        notify-send "xdg-mimic" "No application launcher found!"
+        exit 1
+    fi
+
     if CHOSEN=$(find /usr/share/applications ~/.local/share/applications -type f -name "*.desktop" 2>/dev/null | while read -r file; do
     	base="${file##*/}"
-    	printf "%s\0icon\x1f%s\n" "${base%.desktop}" "$(grep -m 1 "^Icon=" "$file" | cut -d= -f2)"
-    done | sort -u | fuzzel --dmenu --prompt="App for $3: " 2>/dev/null); then
+		printf "%s\0icon\x1f%s\n" "${base%.desktop}" "$(grep -m 1 "^Icon=" "$file" | cut -d= -f2)"
+	done | sort -u | "${MENU_CMD[@]}" 2>/dev/null); then
         /usr/bin/xdg-mime default "${CHOSEN}.desktop" "$3"
         echo "${CHOSEN}.desktop"
     fi
