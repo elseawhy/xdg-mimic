@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Set to "fuzzel", "rofi", "wofi", "bemenu", or "dmenu" to force a specific launcher. 
 # Leave empty to auto-detect!
