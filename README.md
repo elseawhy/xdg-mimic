@@ -1,6 +1,6 @@
 # 🎭 xdg-mimic
 
-> **⚠️ Status: Experimental**
+<video src="https://github.com/user-attachments/assets/d3f00883-0480-4630-a404-6eb262a2941d" controls="controls" width="100%"></video>
 
 A smart, lightweight shadow for `xdg-mime` that brings dynamic "Open With..." menus to standalone window managers (Hyprland, Sway, i3, etc.). Supports fuzzel, rofi, wofi, tofi, bemenu & dmenu.
 
