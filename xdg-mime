@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [[ "$1" == "query" && "$2" == "default" && -n "$3" ]]; then
+    DEFAULT=$(/usr/bin/xdg-mime "$@")
+    [[ -n "$DEFAULT" && -n $(find /usr/share/applications ~/.local/share/applications -type f -name "$DEFAULT" 2>/dev/null | head -n 1) ]] && {
+        echo "$DEFAULT"
+        exit 0
+    }
+
+    if CHOSEN=$(find /usr/share/applications ~/.local/share/applications -type f -name "*.desktop" 2>/dev/null | while read -r file; do
+    	base="${file##*/}"
+    	printf "%s\0icon\x1f%s\n" "${base%.desktop}" "$(grep -m 1 "^Icon=" "$file" | cut -d= -f2)"
+    done | sort -u | fuzzel --dmenu --prompt="App for $3: " 2>/dev/null); then
+        /usr/bin/xdg-mime default "${CHOSEN}.desktop" "$3"
+        echo "${CHOSEN}.desktop"
+    fi
+else
+    exec /usr/bin/xdg-mime "$@"
+fi
