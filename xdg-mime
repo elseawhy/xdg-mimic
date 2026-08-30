@@ -28,10 +28,26 @@ if [[ "$1" == "query" && "$2" == "default" && -n "$3" ]]; then
         exit 1
     fi
 
-    if CHOSEN=$(find /usr/share/applications ~/.local/share/applications -type f -name "*.desktop" 2>/dev/null | while read -r file; do
-    	base="${file##*/}"
-		printf "%s\0icon\x1f%s\n" "${base%.desktop}" "$(grep -m 1 "^Icon=" "$file" | cut -d= -f2)"
-	done | sort -u | "${MENU_CMD[@]}" 2>/dev/null); then
+    [[ "${MENU_CMD[0]}" =~ ^(fuzzel|rofi)$ ]] && SUPPORTS_ICONS=1
+
+    if CHOSEN=$(find ~/.local/share/applications /usr/share/applications -type f -name "*.desktop" 2>/dev/null | awk -v icons="${SUPPORTS_ICONS:-0}" -F/ '
+        BEGIN {
+            fmt = icons ? "%s\0icon\x1f%s\n" : "%s\n"
+        }
+        {
+            name = substr($NF, 1, length($NF) - 8)
+            if (seen[name]++) next
+            icon = ""
+            while ((getline line < $0) > 0) {
+                if (index(line, "Icon=") == 1) {
+                    icon = substr(line, 6)
+                    break
+                }
+            }
+            close($0)
+            printf fmt, name, icon
+        }
+    ' | sort | "${MENU_CMD[@]}" 2>/dev/null); then
         /usr/bin/xdg-mime default "${CHOSEN}.desktop" "$3"
         echo "${CHOSEN}.desktop"
     fi
