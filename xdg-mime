@@ -19,6 +19,8 @@ if [[ "$1" == "query" && "$2" == "default" && -n "$3" ]]; then
         MENU_CMD=(wofi --dmenu --prompt="App for $3: ")
     elif [[ "$LAUNCHER_OVERRIDE" == "bemenu" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v bemenu)" ) ]]; then
         MENU_CMD=(bemenu -p "App for $3: ")
+    elif [[ "$LAUNCHER_OVERRIDE" == "tofi" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v tofi)" ) ]]; then
+        MENU_CMD=(tofi --prompt-text "App for $3: ")
     elif [[ "$LAUNCHER_OVERRIDE" == "dmenu" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v dmenu)" ) ]]; then
         MENU_CMD=(dmenu -p "App for $3: ")
     else
