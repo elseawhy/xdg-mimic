@@ -4,12 +4,46 @@
 # Leave empty to auto-detect!
 LAUNCHER_OVERRIDE=""
 
+# MIME type globs for which xdg-open always shows the menu, even when a
+# default app exists. The default app is listed first; Esc also opens it.
+# A choice made in this mode is not saved as the new default.
+# Examples: ALWAYS_ASK=("*")  or  ALWAYS_ASK=("image/*" "video/*" "application/pdf")
+# For a single call, run: xdg-open --ask FILE  (needs the xdg-open wrapper)
+ALWAYS_ASK=()
+
+# Ask only when the caller is xdg-open, so other xdg-mime users stay silent.
+should_ask() {
+    local pid=$PPID
+    [[ "$(cat "/proc/$pid/comm" 2>/dev/null)" == "xdg-open" ]] || return 1
+    # "xdg-open --ask" sets XDG_MIMIC_ASK to the PID of that xdg-open. We can
+    # run in a subshell of it, so check each xdg-open ancestor. Apps that it
+    # opens inherit the variable, but their own xdg-open calls do not match.
+    if [[ -n "$XDG_MIMIC_ASK" ]]; then
+        while [[ "$(cat "/proc/$pid/comm" 2>/dev/null)" == "xdg-open" ]]; do
+            [[ "$pid" == "$XDG_MIMIC_ASK" ]] && return 0
+            pid=$(awk '/^PPid:/ { print $2 }' "/proc/$pid/status" 2>/dev/null)
+            [[ -n "$pid" ]] || break
+        done
+    fi
+    local pat
+    for pat in "${ALWAYS_ASK[@]}"; do
+        [[ "$1" == $pat ]] && return 0
+    done
+    return 1
+}
+
 if [[ "$1" == "query" && "$2" == "default" && -n "$3" ]]; then
     DEFAULT=$(/usr/bin/xdg-mime "$@")
-    [[ -n "$DEFAULT" && -n $(find /usr/share/applications ~/.local/share/applications -type f -name "$DEFAULT" 2>/dev/null | head -n 1) ]] && {
-        echo "$DEFAULT"
-        exit 0
-    }
+    [[ -n "$DEFAULT" && -n $(find /usr/share/applications ~/.local/share/applications -type f -name "$DEFAULT" 2>/dev/null | head -n 1) ]] || DEFAULT=""
+
+    ASK=0
+    if [[ -n "$DEFAULT" ]]; then
+        should_ask "$3" || {
+            echo "$DEFAULT"
+            exit 0
+        }
+        ASK=1
+    fi
 
     if [[ "$LAUNCHER_OVERRIDE" == "fuzzel" || ( -z "$LAUNCHER_OVERRIDE" && -x "$(command -v fuzzel)" ) ]]; then
         MENU_CMD=(fuzzel --dmenu --prompt="App for $3: ")
@@ -25,12 +59,14 @@ if [[ "$1" == "query" && "$2" == "default" && -n "$3" ]]; then
         MENU_CMD=(dmenu -p "App for $3: ")
     else
         notify-send "xdg-mimic" "No application launcher found!"
+        [[ -n "$DEFAULT" ]] && echo "$DEFAULT"
         exit 1
     fi
 
     [[ "${MENU_CMD[0]}" =~ ^(fuzzel|rofi)$ ]] && SUPPORTS_ICONS=1
 
-    if CHOSEN=$(find ~/.local/share/applications /usr/share/applications -type f -name "*.desktop" 2>/dev/null | awk -v icons="${SUPPORTS_ICONS:-0}" -F/ '
+    # List all apps sorted by name; the current default (if any) goes first.
+    if CHOSEN=$(find ~/.local/share/applications /usr/share/applications -type f -name "*.desktop" 2>/dev/null | awk -v icons="${SUPPORTS_ICONS:-0}" -v first="${DEFAULT%.desktop}" -F/ '
         BEGIN {
             fmt = icons ? "%s\0icon\x1f%s\n" : "%s\n"
         }
@@ -45,11 +81,20 @@ if [[ "$1" == "query" && "$2" == "default" && -n "$3" ]]; then
                 }
             }
             close($0)
-            printf fmt, name, icon
+            entry = sprintf(fmt, name, icon)
+            if (name == first) top = entry
+            else printf "%s", entry | "sort"
         }
-    ' | sort | "${MENU_CMD[@]}" 2>/dev/null); then
-        /usr/bin/xdg-mime default "${CHOSEN}.desktop" "$3"
+        END {
+            printf "%s", top
+            fflush()
+            close("sort")
+        }
+    ' | "${MENU_CMD[@]}" 2>/dev/null) && [[ -n "$CHOSEN" ]]; then
+        (( ASK )) || /usr/bin/xdg-mime default "${CHOSEN}.desktop" "$3"
         echo "${CHOSEN}.desktop"
+    elif (( ASK )); then
+        echo "$DEFAULT"
     fi
 else
     exec /usr/bin/xdg-mime "$@"

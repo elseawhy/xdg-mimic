@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Optional xdg-mimic wrapper that adds "-a" / "--ask" to xdg-open:
+#   xdg-open --ask FILE
+# shows the launcher menu for this call, even when a default app exists.
+# All other calls go to /usr/bin/xdg-open unchanged.
+
+case "$1" in
+    -a|--ask)
+        shift
+        # xdg-mime asks only when this matches the PID of xdg-open.
+        # exec keeps the PID, so $$ is also the PID of /usr/bin/xdg-open.
+        XDG_MIMIC_ASK=$$
+        export XDG_MIMIC_ASK
+        ;;
+esac
+
+exec /usr/bin/xdg-open "$@"
